@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info
+.pytest_cache
+.ipynb_checkpoints
+
+# HumanML3D
+amass_data
+body_models
+joints
+pose_data
+HumanML3D/HumanML3D*/**
+!HumanML3D/HumanML3D/
+
+# whisper
+thumbs.db
+.DS_Store
+.idea
+ 
