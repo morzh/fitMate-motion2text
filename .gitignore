@@ -5,6 +5,9 @@ __pycache__/
 .pytest_cache
 .ipynb_checkpoints
 
+# action_recognition
+action_recognition/dataset
+
 # HumanML3D
 amass_data
 body_models
@@ -18,3 +21,4 @@ thumbs.db
 .DS_Store
 .idea
  
+
