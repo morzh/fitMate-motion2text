@@ -3,8 +3,7 @@ from pathlib import Path
 from threading import Thread
 import numpy as np
 import cv2
-
-PROJECT_ROOT = Path(__file__).parent.parent
+from screeninfo import get_monitors
 
 
 class VideoReader:
@@ -17,14 +16,15 @@ class VideoReader:
         self.source = source
         self.capture = cv2.VideoCapture(source if type(source) is int else str(source))
         self._set_capture_options(options)
+        self._thread_reader = None
         status, frame_img = self.capture.read()
         if not status:
             raise Exception(f"Source path '{self.source}' error, video can't be read.")
         self.frame_img = frame_img
         self.frame_idx = 0
         self._close = False
-        self._thread_reader = None
         self._frame_name = self._build_frame_name()
+        self.show_size = self._get_show_size(frame_img)
 
     def _set_capture_options(self, options):
         if "fps" in options:
@@ -64,20 +64,44 @@ class VideoReader:
     def is_alife(self):
         return self.frame_img is not None and not self._close
 
-    def show_frame(self, image: np.ndarray = None, frame_name: str = None):
+    def show_frame(self,
+                   image: np.ndarray = None,
+                   frame_name: str = None,
+                   show_full_frame: bool = True):
         if image is None:
             image = self.frame_img
         if frame_name is None:
             frame_name = self._frame_name
 
+        if show_full_frame and self.show_size is not None:
+            image = cv2.resize(image, self.show_size)
+
         cv2.imshow(frame_name, image)
         k = cv2.waitKey(1)
         if k == 113:  # 'q' key to stop
             self._close = True
-        elif k == -1:
-            pass
-        else:
-            print(k)
+
+    @staticmethod
+    def _get_show_size(image):
+        sys_monitors = get_monitors()
+        h, w, _ = image.shape
+        if sys_monitors is not None and sys_monitors:
+            k = 1
+            monitor_h = sys_monitors[0].height
+            monitor_w = sys_monitors[0].width
+            if h > monitor_h:
+                k = monitor_h / h
+
+            if w > monitor_w:
+                kw = monitor_w / w
+                if kw < k:
+                    k = kw
+
+            if k != 1:
+                h = int(sys_monitors[0].height * k * 0.8)
+                w = int(sys_monitors[0].width * k * 0.8)
+
+        return w, h
 
     def _build_frame_name(self):
         if type(self.source) is int:
@@ -88,24 +112,6 @@ class VideoReader:
 
     def __del__(self):
         self._close = True
+        self.capture.release()
         if self._thread_reader is not None:
             self._thread_reader.join()
-
-
-def test_run(source):
-    options = {
-        "fps": 30,
-        "width": 1920,
-        "height": 1080
-    }
-
-    reader = VideoReader(source, options)
-    for frame, frame_idx in reader.image_generator():
-        reader.show_frame()
-        print(frame_idx)
-
-
-if __name__ == "__main__":
-    test_video = PROJECT_ROOT / "dataset/from_team/pullDown/1036 || Sergey | pullDown.mov"
-    webcam_idx = 0
-    test_run(source=webcam_idx)
