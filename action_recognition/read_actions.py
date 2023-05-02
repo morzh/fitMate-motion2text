@@ -22,6 +22,6 @@ def run(source):
 
 
 if __name__ == '__main__':
-    test_video = PROJECT_ROOT / "dataset/from_team/pullDown/1036 || Sergey | pullDown.mov"
-    webcam_idx = 0
-    run(test_video)
+    # test_video = PROJECT_ROOT / "dataset/from_team/pullDown/1036 || Sergey | pullDown.mov"
+    # webcam_idx = 0
+    run()
