@@ -4,6 +4,7 @@ from threading import Thread
 import numpy as np
 import cv2
 from screeninfo import get_monitors
+from datetime import datetime
 
 
 class VideoReader:
@@ -18,12 +19,13 @@ class VideoReader:
         self._set_capture_options(options)
         self._thread_reader = None
         status, frame_img = self.capture.read()
+        self.frame_time = datetime.now()
+        self.frame_idx = 0
         if not status:
             raise Exception(f"Source path '{self.source}' error, video can't be read.")
         self.frame_img = frame_img
-        self.frame_idx = 0
         self._close = False
-        self._frame_name = self._build_frame_name()
+        self._window_name = self._build_window_name()
         self.show_size = self._get_show_size(frame_img)
 
     def _set_capture_options(self, options):
@@ -40,15 +42,14 @@ class VideoReader:
 
     def image_generator(self):
         if type(self.source) is int:
-            self._run_img_reader()
-            while self.is_alife():
-                yield self.frame_img, self.frame_idx
+            self._run_realtime_img_reader()
+            while self.read_frame():
+                yield self.frame_img, self.frame_time
         else:
-            while self.is_alife():
-                self.read_frame()
+            while self.read_frame():
                 yield self.frame_img, self.frame_idx
 
-    def _run_img_reader(self):
+    def _run_realtime_img_reader(self):
         if type(self.source) is int:
             self._thread_reader = Thread(target=self.run_reader_thread, args=())
             self._thread_reader.start()
@@ -58,11 +59,17 @@ class VideoReader:
             self.read_frame()
 
     def read_frame(self):
-        _, self.frame_img = self.capture.read()
-        self.frame_idx += 1
+        status, img = self.capture.read()
+        if img is None:
+            self._close = True
+        else:
+            self.frame_idx += 1
+            self.frame_img = img
+            self.frame_time = datetime.now()
+        return not self._close
 
     def is_alife(self):
-        return self.frame_img is not None and not self._close
+        return not self._close
 
     def show_frame(self,
                    image: np.ndarray = None,
@@ -71,7 +78,7 @@ class VideoReader:
         if image is None:
             image = self.frame_img
         if frame_name is None:
-            frame_name = self._frame_name
+            frame_name = self._window_name
 
         if show_full_frame and self.show_size is not None:
             image = cv2.resize(image, self.show_size)
@@ -98,12 +105,12 @@ class VideoReader:
                     k = kw
 
             if k != 1:
-                h = int(sys_monitors[0].height * k * 0.8)
-                w = int(sys_monitors[0].width * k * 0.8)
+                h = int(h * k * 0.9)
+                w = int(w * k * 0.9)
 
         return w, h
 
-    def _build_frame_name(self):
+    def _build_window_name(self):
         if type(self.source) is int:
             frame_name = f"Webcam: {self.source}. Press 'q' to close."
         else:
