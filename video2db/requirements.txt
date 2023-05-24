@@ -1,0 +1,4 @@
+fastapi[all]
+streaming-form-data==1.12.0
+google-api-python-client==2.86.0
+firebase_admin
