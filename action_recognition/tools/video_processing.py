@@ -1,6 +1,8 @@
 from typing import Union, Dict
 from pathlib import Path
 from threading import Thread
+from tqdm import tqdm
+import imageio
 import numpy as np
 import cv2
 from screeninfo import get_monitors
@@ -122,3 +124,30 @@ class VideoReader:
         self.capture.release()
         if self._thread_reader is not None:
             self._thread_reader.join()
+
+
+class VideoWriter:
+    def __init__(self, fpath: Path, fps: float = 30.0, verbose: bool = True):
+        self._stream = imageio.get_writer(fpath, fps=fps)
+        self._verbose = verbose
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self._stream.close()
+
+    def write_frame(self, frame: np.ndarray):
+        """Write single frame."""
+
+        self._stream.append_data(frame)
+
+    def write(self, frames: list[np.ndarray]):
+        """Write list of frames."""
+
+        stream = frames
+        if self._verbose:
+            stream = tqdm(frames, desc="Frames processing")
+
+        for frame in stream:
+            self.write_frame(frame)

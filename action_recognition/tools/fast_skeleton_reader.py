@@ -8,7 +8,7 @@ import queue
 
 from threading import Thread
 
-from settings import mediapipe_options
+from action_recognition.settings import mediapipe_options
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles

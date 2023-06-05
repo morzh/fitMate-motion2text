@@ -3,10 +3,12 @@ import time
 import numpy as np
 
 from tqdm import tqdm
-from tools.fast_skeleton_reader import SkeletonReader
-from tools.video_reader import VideoReader
+from action_recognition.tools.fast_skeleton_reader import SkeletonReader
+from action_recognition.tools.video_processing import VideoReader
+from action_recognition.tools.viz import SkeletonVisualizer
+
 from pathlib import Path
-from settings import webcam_options
+from action_recognition.settings import webcam_options
 
 
 PROJECT_ROOT = Path(__file__).parent
@@ -38,6 +40,7 @@ def run():
         np.save(str(save_path), np.array(skeletons, dtype=object))
         print(f"Was processed {str(save_path)}")
         skeleton_reader.result_history = []
+
 
 
 if __name__ == '__main__':
