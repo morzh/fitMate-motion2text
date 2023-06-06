@@ -5,7 +5,6 @@ import numpy as np
 from tqdm import tqdm
 from action_recognition.tools.fast_skeleton_reader import SkeletonReader
 from action_recognition.tools.video_processing import VideoReader
-from action_recognition.tools.viz import SkeletonVisualizer
 
 from pathlib import Path
 from action_recognition.settings import webcam_options
@@ -40,7 +39,6 @@ def run():
         np.save(str(save_path), np.array(skeletons, dtype=object))
         print(f"Was processed {str(save_path)}")
         skeleton_reader.result_history = []
-
 
 
 if __name__ == '__main__':

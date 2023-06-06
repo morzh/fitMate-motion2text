@@ -7,8 +7,6 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 
 def show_mediapipe_processing(source):
-    if source.isdigit():
-        source = int(source)
     video_reader = VideoReader(source, webcam_options)
     skeleton_reader = SkeletonReader()
 
@@ -27,7 +25,7 @@ def write_mediapipe_video(video_fpath: Path, save_dpath: Path):
         for image, frame_idx in video_reader.image_generator():
             print(frame_idx)
             frame_skeletons = skeleton_reader.get_skeleton(image)
-            image = skeleton_reader.draw_pose_points(to_rgb=True)
+            image = skeleton_reader.draw_pose_points()
             # video_reader.show_frame(image)
             video_writer.write_frame(image)
 
@@ -38,4 +36,5 @@ if __name__ == '__main__':
     # test_video = PROJECT_ROOT / "dataset/from_team/pullDown/1036 || Sergey | pullDown.mov"
     webcam_idx = 0
     save_fpath = PROJECT_ROOT / "results" / "videos"
+    show_mediapipe_processing(test_video)
     write_mediapipe_video(test_video, save_fpath)
