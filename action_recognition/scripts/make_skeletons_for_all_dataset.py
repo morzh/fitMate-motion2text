@@ -1,13 +1,11 @@
-import time
-
-import numpy as np
-
-from tqdm import tqdm
-from action_recognition.tools.fast_skeleton_reader import SkeletonReader
-from action_recognition.tools.video_processing import VideoReader
-
 from pathlib import Path
-from action_recognition.settings import webcam_options
+import time
+import numpy as np
+from tqdm import tqdm
+
+from tools.fast_skeleton_reader import SkeletonReader
+from tools.video_processing import VideoReader
+from settings import webcam_options
 
 
 PROJECT_ROOT = Path(__file__).parent

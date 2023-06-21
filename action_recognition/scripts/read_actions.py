@@ -1,7 +1,9 @@
-from action_recognition.tools.skeleton_reader import SkeletonReader
-from action_recognition.tools.video_processing import VideoReader, VideoWriter
 from pathlib import Path
-from action_recognition.settings import webcam_options
+from tqdm import tqdm
+from settings import webcam_options
+from tools.skeleton_reader import SkeletonReader
+from tools.video_processing import VideoReader, VideoWriter
+from tools.interpolation import Interpolation
 
 PROJECT_ROOT = Path(__file__).parent.parent
 
@@ -11,9 +13,10 @@ def show_mediapipe_processing(source):
     skeleton_reader = SkeletonReader()
 
     for image, frame_idx in video_reader.image_generator():
-        frame_skeletons = skeleton_reader.get_skeleton(image)
+        skeleton = skeleton_reader.get_skeleton(image)
         image = skeleton_reader.draw_pose_points()
         video_reader.show_frame(image)
+        skeleton_reader.plot_3d_skeleton(skeleton)
 
 
 def write_mediapipe_video(video_fpath: Path, save_dpath: Path):
@@ -24,10 +27,25 @@ def write_mediapipe_video(video_fpath: Path, save_dpath: Path):
     with VideoWriter(save_fpath, fps=video_reader.fps) as video_writer:
         for image, frame_idx in video_reader.image_generator():
             print(frame_idx)
-            frame_skeletons = skeleton_reader.get_skeleton(image)
+            skeletons = skeleton_reader.get_skeleton(image)
             image = skeleton_reader.draw_pose_points()
             # video_reader.show_frame(image)
             video_writer.write_frame(image)
+
+
+def write_3d_animation(skeletons_fpath: Path, save_fpath: Path, interpolation=True, fps=30):
+    skeleton_reader = SkeletonReader()
+    skeletons = skeleton_reader.read_skeletons_from_file(str(skeletons_fpath))
+    if interpolation:
+        skeletons = Interpolation().interpolate_skeletons(skeletons)
+
+    with VideoWriter(save_fpath, fps=fps) as video_writer:
+        for skeleton in tqdm(skeletons, desc=f"Write video: {save_fpath}"):
+            skeleton_reader.plot_3d_skeleton(skeleton, show=False)
+            image = skeleton_reader.get_3d_image(640)
+            video_writer.write_frame(image)
+
+    print(f"Video saved: {save_fpath}")
 
 
 if __name__ == '__main__':

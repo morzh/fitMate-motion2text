@@ -1,22 +1,21 @@
-import time
-
 import cv2
 import mediapipe as mp
 import numpy as np
 from multiprocessing import Process, Queue
+from threading import Thread
 import queue
 
-from threading import Thread
-
-from action_recognition.settings import mediapipe_options
+from tools.skeleton_reader import SkeletonReader as BaseSR
+from settings import mediapipe_options
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
 
 
-class SkeletonReader:
-    def __init__(self, n_process=3):
+class SkeletonReader(BaseSR):
+    def __init__(self, online_draw=False, n_process=3):
+        super().__init__(online_draw)
         self.result_history = []
         self.image_queue = Queue(maxsize=1)
         self.skeleton_queue = Queue()
@@ -75,25 +74,14 @@ class SkeletonReader:
             results = results[:-10]
         return results
 
-    # def get_all_results(self):
-    #     while True:
-    #         status = []
-    #         for process in self.mp_processes:
-    #             status.append(process.is_alive())
-    #         time.sleep(1)
-    #         if all(status):
-    #             break
-    #     # results = [r[1] for r in sorted(self.result_history)]
-    #     return sorted(self.result_history)
-
-    @staticmethod
-    def draw_pose_points(image, points):
-        mp_drawing.draw_landmarks(
-            image,
-            points.pose_landmarks,
-            mp_pose.POSE_CONNECTIONS,
-            landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
-        return image
+    # @staticmethod
+    # def draw_pose_points(image, points):
+    #     mp_drawing.draw_landmarks(
+    #         image,
+    #         points.pose_landmarks,
+    #         mp_pose.POSE_CONNECTIONS,
+    #         landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+    #     return image
 
     def __del__(self):
         try:
