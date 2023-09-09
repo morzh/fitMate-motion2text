@@ -1,0 +1,3 @@
+Requirement already satisfied: torch in /home/morzh/progz/anaconda3/envs/PCT/lib/python3.8/site-packages (1.8.0)
+Requirement already satisfied: typing-extensions in /home/morzh/progz/anaconda3/envs/PCT/lib/python3.8/site-packages (from torch) (4.6.2)
+Requirement already satisfied: numpy in /home/morzh/progz/anaconda3/envs/PCT/lib/python3.8/site-packages (from torch) (1.24.3)
