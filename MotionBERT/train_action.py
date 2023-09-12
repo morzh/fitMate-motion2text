@@ -47,6 +47,7 @@ def parse_args():
     parser.add_argument('-ms', '--selection', default='latest_epoch.bin', type=str,
                         metavar='FILENAME', help='checkpoint to finetune (file name)')
     opts = parser.parse_args()
+    opts.print_freq = int(opts.print_freq)
     return opts
 
 
