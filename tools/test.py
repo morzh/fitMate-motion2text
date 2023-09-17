@@ -25,8 +25,8 @@ except ImportError:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='mmpose test model')
-    parser.add_argument('config', help='test config file path')
+    parser = argparse.ArgumentParser(description='mmpose tests model')
+    parser.add_argument('config', help='tests config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument('--out', help='output result file')
     parser.add_argument(

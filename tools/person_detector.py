@@ -165,7 +165,7 @@ def init_pose_model(config, checkpoint=None, device='cuda:0'):
         # load model checkpoint
         load_checkpoint(model, checkpoint, map_location='cpu')
     # save the config in the model for convenience
-    model.cfg = config
+    model.video_settigns = config
     model.to(device)
     model.eval()
     return model
@@ -192,7 +192,7 @@ def main():
 
 
 
-    # test a single image, the resulting box is (x1, y1, x2, y2)
+    # tests a single image, the resulting box is (x1, y1, x2, y2)
     mmdet_results = inference_detector(det_model, source_image_filepath)
 
     # keep the person class bounding boxes.

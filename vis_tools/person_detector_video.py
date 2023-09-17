@@ -3,8 +3,8 @@ import sys
 import cv2
 import numpy as np
 # import ffmpeg
-from moviepy.editor import VideoFileClip
-from tinytag import TinyTag
+# from moviepy.editor import VideoFileClip
+# from tinytag import TinyTag
 # import exifread
 import torch
 import matplotlib.pyplot as plt
@@ -26,12 +26,12 @@ from mmdet.apis import inference_detector, init_detector
 has_mmdet = True
 
 cfg = dict(
-    filename_source='/home/morzh/Videos/VideosToEstimateSkeletons/IMG_2927.MOV',
-    filename_target='/home/morzh/Videos/VideosToEstimateSkeletons/IMG_2927_processed.mp4',
+    filename_source='/media/anton/78c429b5-289a-4928-ba55-218ce513ebf5/home/morzh/Videos/IMG_2920.MOV',
+    filename_target='/media/anton/78c429b5-289a-4928-ba55-218ce513ebf5/home/morzh/Videos/IMG_2920_bboxes.mp4',
     fps_target=30.0,
     scale_percent=50,
     images_batch_size=2,
-    det_config='/home/morzh/work/fitMate/repositories/PCT/vis_tools/cascade_rcnn_x101_64x4d_fpn_coco.py',
+    det_config='./cascade_rcnn_x101_64x4d_fpn_coco.py',
     det_checkpoint='https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_64x4d_fpn_20e_coco/cascade_rcnn_x101_64x4d_fpn_20e_coco_20200509_224357-051557b1.pth',
     pose_config='../configs/pct_large_classifier.py',
     pose_checkpoint='../weights/pct/swin_large.pth',
@@ -150,7 +150,7 @@ def init_pose_model(config, checkpoint=None, device='cuda:0'):
         # load model checkpoint
         load_checkpoint(model, checkpoint, map_location='cpu')
     # save the config in the model for convenience
-    model.cfg = config
+    model.video_settigns = config
     model.to(device)
     model.eval()
     return model

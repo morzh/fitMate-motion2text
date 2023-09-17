@@ -1,36 +1,34 @@
+import os
 import time
 import sys
 import cv2
-# import ffmpeg
-from moviepy.editor import VideoFileClip
-from tinytag import TinyTag
-# import exifread
-import torch
+import json
 import matplotlib.pyplot as plt
 
-plt.switch_backend('Agg')
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
-import matplotlib.patches as patches
+from init_pose_model import init_pose_model
 
 import mmcv
 from mmcv.runner import load_checkpoint
-from mmpose.apis import (inference_top_down_pose_model, process_mmdet_results, inference)
+from mmpose.apis import (process_mmdet_results, inference)
 from mmpose.utils.hooks import OutputHook
-from mmpose.datasets import DatasetInfo
 from models import build_posenet
 from colors_styles import *
 from mmdet.apis import inference_detector, init_detector
 
+plt.switch_backend('Agg')
 has_mmdet = True
 
 cfg = dict(
-    filename_source='/home/morzh/Videos/VideosToEstimateSkeletons/IMG_5209.mov',
-    filename_target='/home/morzh/Videos/VideosToEstimateSkeletons/IMG_5209_processed.mp4',
+    filename_source='/media/anton/78c429b5-289a-4928-ba55-218ce513ebf5/home/morzh/Videos/IMG_2920.MOV',
+    filename_target='/media/anton/78c429b5-289a-4928-ba55-218ce513ebf5/home/morzh/Videos/IMG_2920_joints.mp4',
+    folder_output='/media/anton/78c429b5-289a-4928-ba55-218ce513ebf5/home/morzh/Videos',
+    filename_source_video='IMG_2920.MOV',
     fps_target=30.0,
     scale_percent=50,
     images_batch_size=2,
-    det_config='/home/morzh/work/fitMate/repositories/PCT/vis_tools/cascade_rcnn_x101_64x4d_fpn_coco.py',
+    det_config='./cascade_rcnn_x101_64x4d_fpn_coco.py',
     det_checkpoint='https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_64x4d_fpn_20e_coco/cascade_rcnn_x101_64x4d_fpn_20e_coco_20200509_224357-051557b1.pth',
     pose_config='../configs/pct_large_classifier.py',
     pose_checkpoint='../weights/pct/swin_large.pth',
@@ -38,6 +36,17 @@ cfg = dict(
     bbox_threshold=0.5,
 )
 
+
+class NumpyEncoder(json.JSONEncoder):
+    """ Special json encoder for numpy types """
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
 
 def bbox_xyxy2xywh(bbox_xyxy):
     """Transform the bbox format from x1y1x2y2 to xywh.
@@ -203,7 +212,7 @@ def bboxes_dict2ndarray(persons_bboxes):
     return bboxes
 
 
-def largest_box_threshold(bboxes_xywh, threshold):
+def largest_bbox_threshold(bboxes_xywh, threshold):
 
     number_boxes = len(bboxes_xywh)
 
@@ -248,19 +257,22 @@ def main():
     show_scaled_images = False
 
     index_frame = 0
+    '''
     index_frame_buffer = 0
 
     width_scaled = int(cap_width * cfg['scale_percent'] / 100.0)
     height_scaled = int(cap_height * cfg['scale_percent'] / 100.0)
     frames_resized_buffer = np.empty((0, cap_height, cap_width, 3), dtype=np.uint8)
     # frames_resized_buffer = []
-
+    '''
     fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
     capture_target = cv2.VideoWriter(cfg['filename_target'], fourcc, cfg['fps_target'], (cap_width, cap_height))
 
+    video_data = []
+
     print('number of frames:', frame_count)
     time_start = time.time()
-    while True:
+    while index_frame < frame_count:
         percentage = index_frame / (frame_count - 1)
         time.sleep(1e-5)
         sys.stdout.write("\r%f%%" % percentage)
@@ -279,12 +291,12 @@ def main():
         persons_bboxes = process_mmdet_results(mmdet_results, cfg['det_cat_id'])
         persons_bboxes = bboxes_dict2ndarray(persons_bboxes)
         persons_bboxes = bbox_xyxy2xywh(persons_bboxes)
-        bounding_box = largest_box_threshold(persons_bboxes, cfg['bbox_threshold'])
+        bounding_box = largest_bbox_threshold(persons_bboxes, cfg['bbox_threshold'])
 
         if bounding_box is None:
             capture_target.write(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            index_frame += 1
             continue
-
 
         person_bbox = np.expand_dims(bounding_box, axis=0)
         # print('person_bbox', person_bbox)
@@ -300,6 +312,7 @@ def main():
 
         frame_visualization = draw_bbox(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR), person_bbox[0])
         frame_visualization = draw_skeleton(frame_visualization, poses)
+        frame_data = {'frame': index_frame, 'bbox': person_bbox[0], 'pose': poses[0]}
 
         if show_frame_results:
             cv2.imshow('Bbox', frame_visualization)
@@ -307,15 +320,19 @@ def main():
 
         capture_target.write(frame_visualization)
 
+        video_data.append(frame_data)
         index_frame += 1
 
     time_end = time.time()
-
     capture_source.release()
     capture_target.release()
-
     cv2.destroyAllWindows()
 
+    # json_string = json.dumps(video_data, ensure_ascii=False, indent=4, cls=NumpyEncoder)
+    with open(os.path.join(cfg['folder_output'], cfg['filename_source_video']+'.json'), 'w') as outfile:
+        json.dump(video_data, outfile, indent=4, ensure_ascii=False, cls=NumpyEncoder)
+
+    print('\n')
     print('processing time:', time_end - time_start, 'seconds')
 
 

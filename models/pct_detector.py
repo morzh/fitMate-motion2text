@@ -83,7 +83,7 @@ class PCT(BasePose):
         When `return_loss=True`, img and img_meta are single-nested (i.e.
         Tensor and List[dict]), and when `resturn_loss=False`, img and img_meta
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
-        the outer list indicating test time augmentations.
+        the outer list indicating tests time augmentations.
 
         Note:
             batch_size: N
@@ -105,7 +105,7 @@ class PCT(BasePose):
                 - "rotation": rotation of the bbox
                 - "bbox_score": score of bbox
             return_loss (bool): Option to `return loss`. `return loss=True`
-                for training, `return loss=False` for validation & test.
+                for training, `return loss=False` for validation & tests.
 
         Returns:
             dict|tuple: if `return loss` is true, then return losses.

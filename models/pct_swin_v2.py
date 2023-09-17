@@ -200,9 +200,10 @@ class WindowAttention(nn.Module):
         self.attn_type = attn_type
         self.rpe_output_type = rpe_output_type
         self.relative_coords_table_type = relative_coords_table_type
+        self.verbose = 0
 
         if self.attn_type == 'cosine_mh':
-            self.logit_scale = nn.Parameter(torch.log(10 * torch.ones((num_heads, 1, 1))), requires_grad=True)
+            self.logit_scale = nn.Parameter(torch.log(10 * torch.ones((num_heads, 1, 1))).cuda(), requires_grad=True)
         elif self.attn_type == 'normal':
             head_dim = dim // num_heads
             self.scale = qk_scale or head_dim ** -0.5
@@ -224,7 +225,8 @@ class WindowAttention(nn.Module):
                 relative_coords_table[:, :, :, 0] /= (self.window_size[0] - 1)
                 relative_coords_table[:, :, :, 1] /= (self.window_size[1] - 1)
             elif relative_coords_table_type == 'linear_bylayer':
-                print(f"norm8_log_bylayer: [{self.window_size}] ==> [{pretrain_window_size}]")
+                if self.verbose > 0:
+                    print(f"norm8_log_bylayer: [{self.window_size}] ==> [{pretrain_window_size}]")
                 relative_coords_table[:, :, :, 0] /= (pretrain_window_size - 1)
                 relative_coords_table[:, :, :, 1] /= (pretrain_window_size - 1)
             elif relative_coords_table_type == 'norm8_log':
@@ -259,7 +261,8 @@ class WindowAttention(nn.Module):
                 relative_coords_table = torch.sign(relative_coords_table) * torch.log2(
                     torch.abs(relative_coords_table) + 1.0) / np.log2(8)  # log8
             elif relative_coords_table_type == 'norm8_log_bylayer':
-                print(f"norm8_log_bylayer: [{self.window_size}] ==> [{pretrain_window_size}]")
+                if self.verbose > 0:
+                    print(f"norm8_log_bylayer: [{self.window_size}] ==> [{pretrain_window_size}]")
                 relative_coords_table[:, :, :, 0] /= (pretrain_window_size - 1)
                 relative_coords_table[:, :, :, 1] /= (pretrain_window_size - 1)
                 relative_coords_table *= 8  # normalize to -8, 8
@@ -319,7 +322,7 @@ class WindowAttention(nn.Module):
         if self.attn_type == 'cosine_mh':
             q = F.normalize(q.float(), dim=-1)
             k = F.normalize(k.float(), dim=-1)
-            logit_scale = torch.clamp(self.logit_scale, max=torch.log(torch.tensor(1. / 0.01))).exp()
+            logit_scale = torch.clamp(self.logit_scale, max=torch.log(torch.tensor(1. / 0.01)).cuda()).exp()
             attn = (q @ k.transpose(-2, -1)) * logit_scale.float()
         elif self.attn_type == 'normal':
             q = q * self.scale
