@@ -2,6 +2,7 @@ import json
 import os
 from abc import abstractmethod
 import numpy as np
+import pickle
 
 
 class DatasetStrategy(object):
@@ -80,14 +81,6 @@ class DatasetFromVideo(DatasetStrategy):
             samples = np.expand_dims(samples, axis=1)
             zeros = np.zeros(samples.shape)
             samples = np.hstack((samples, zeros))
-            '''
-            samples = np.zeros((number_samples, 2, self.sample_frames_number_, self.number_joints_, 3))
-            for sample_index in range(number_samples):
-                index_first = self.soft_cutoff_frames_ + sample_index * self.sample_frames_number_
-                index_second = self.soft_cutoff_frames_ + (sample_index + 1) * self.sample_frames_number_
-                sample = data[index_first: index_second]
-                samples[sample_index] = self.fake_second_person_(sample)
-            '''
             return samples
 
     def fake_second_person_(self,  data: np.ndarray) -> np.ndarray:
@@ -99,10 +92,9 @@ class DatasetFromVideo(DatasetStrategy):
         pass
 
 
-if '__name__' == '__main__':
-
+def main():
     folder_annotations = '/home/anton/work/fitMate/datasets/ActionDatasets/TestActions/annotations'
-    folder_dataset = '/home/anton/work/fitMate/datasets/ActionDatasets/TestActions/motionBERT_dataset'
+    folder_dataset = '/home/anton/work/fitMate/datasets/ActionDatasets/TestActions/motionBERT_dataset_PCT'
     files = [f for f in os.listdir(folder_annotations) if os.path.isfile(os.path.join(folder_annotations, f)) and f.endswith('json')]
 
     dataset_generator = DatasetFromVideo()
@@ -114,7 +106,11 @@ if '__name__' == '__main__':
 
         poses = [p['pose'] for p in annotation['annotations_PCT']]
         poses = np.array(poses)
-        dataset_generator.get_samples(poses)
+        sample_video = dataset_generator.get_samples(poses)
+        pickle_filename = os.path.splitext(file)[0] + '.pkl'
+        with open(os.path.join(folder_dataset, pickle_filename), 'wb') as f:
+            pickle.dump(sample_video, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-
+if __name__ == '__main__':
+    main()
