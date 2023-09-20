@@ -1,17 +1,11 @@
-import os
-import numpy as np
 import time
-import sys
 import argparse
 import errno
-from collections import OrderedDict
 import tensorboardX
 from tqdm import tqdm
 import random
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
@@ -126,7 +120,7 @@ def train_with_config(args, opts):
     trainloader_params = {
         'batch_size': args.batch_size,
         'shuffle': True,
-        'num_workers': 8,
+        'num_workers': 1,
         'pin_memory': True,
         'prefetch_factor': 4,
         'persistent_workers': True
@@ -134,7 +128,7 @@ def train_with_config(args, opts):
     testloader_params = {
         'batch_size': args.batch_size,
         'shuffle': False,
-        'num_workers': 8,
+        'num_workers': 1,
         'pin_memory': True,
         'prefetch_factor': 4,
         'persistent_workers': True
@@ -291,40 +285,9 @@ def train_with_config(args, opts):
               'Acc@5 {top5:.3f} \t'.format(loss=test_loss, top1=test_top1, top5=test_top5))
 
 
-class ActionClassifier:
-    LABEL_FPATH = "data/action/ntu_actions.txt"
-
-    def __init__(self):
-        opts = parse_args()
-        args = get_config(opts.config)
-        model_backbone = load_backbone(args)
-        self.model = ActionNet(backbone=model_backbone,
-                               dim_rep=args.dim_rep,
-                               num_classes=args.action_classes,
-                               dropout_ratio=args.dropout_ratio,
-                               version=args.model_version,
-                               hidden_dim=args.hidden_dim,
-                               num_joints=args.num_joints)
-        self.model.eval()
-        if torch.cuda.is_available():
-            self.model = nn.DataParallel(self.model)
-            self.model = self.model.cuda()
-        with open(self.LABEL_FPATH, 'r') as file:
-            self.labels = [label.split(".")[1][1:] for label in file.readlines()]
-
-    def inference(self, skeletons: np.ndarray) -> list:
-        for i in range(5 - len(skeletons.shape)):
-            skeletons = skeletons[None]
-        skeletons = torch.tensor(skeletons)
-        with torch.no_grad():
-            if torch.cuda.is_available():
-                skeletons = skeletons.cuda()
-            output = self.model(skeletons)  # (N, num_classes)
-        return self.idx2lbl(output)
-
-    def idx2lbl(self, label_idx: torch.tensor) -> list:
-        return self.labels[label_idx.argmax()]
-
+# train arguments:
+# --config configs/action/MB_train_NTU60_xsub.yaml -ms checkpoint/action/MB_train_NTU60_xsub/best_epoch.bin
+# -freq 1
 
 if __name__ == "__main__":
     opts = parse_args()
