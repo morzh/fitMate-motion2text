@@ -5,8 +5,8 @@ import json
 import matplotlib.pyplot as plt
 import colors_styles
 
-from numpy_json_encoder import NumpyJsonEncoder
-from mmpose.apis import (inference_top_down_pose_model, process_mmdet_results, inference)
+from utils.numpy_json_encoder import NumpyJsonEncoder
+from mmpose.apis import (process_mmdet_results, inference)
 from mmpose.utils.hooks import OutputHook
 from init_pose_model import init_pose_model
 from mmdet.apis import inference_detector, init_detector

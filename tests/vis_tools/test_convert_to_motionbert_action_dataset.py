@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from vis_tools.convert_to_motionbert_action_dataset import DatasetFromVideo
+from dataset_tools.convert_to_motionbert_action_dataset import DatasetFromVideo
 
 
 class TestDatasetFromVideo(unittest.TestCase):

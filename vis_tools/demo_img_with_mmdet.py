@@ -124,7 +124,7 @@ def init_pose_model(config, checkpoint=None, device='cuda:0'):
         # load model checkpoint
         load_checkpoint(model, checkpoint, map_location='cpu')
     # save the config in the model for convenience
-    model.video_settigns = config
+    model.cfg = config
     model.to(device)
     model.eval()
     return model
