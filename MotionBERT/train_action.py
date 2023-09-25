@@ -111,6 +111,16 @@ def train_with_config(args, opts):
         model = nn.DataParallel(model)
         model = model.cuda()
         criterion = criterion.cuda()
+
+    chk_filename = os.path.join(opts.checkpoint, "latest_epoch.bin")
+    if os.path.exists(chk_filename):
+        opts.resume = chk_filename
+    if opts.resume or opts.evaluate:
+        chk_filename = opts.evaluate if opts.evaluate else opts.resume
+        print('Loading checkpoint', chk_filename)
+        checkpoint = torch.load(chk_filename, map_location=lambda storage, loc: storage)
+        model.load_state_dict(checkpoint['model'], strict=True)
+
     best_acc = 0
     model_params = 0
     for parameter in model.parameters():
@@ -120,7 +130,7 @@ def train_with_config(args, opts):
     trainloader_params = {
         'batch_size': args.batch_size,
         'shuffle': True,
-        'num_workers': 1,
+        'num_workers': 2,
         'pin_memory': True,
         'prefetch_factor': 4,
         'persistent_workers': True
@@ -128,7 +138,7 @@ def train_with_config(args, opts):
     testloader_params = {
         'batch_size': args.batch_size,
         'shuffle': False,
-        'num_workers': 1,
+        'num_workers': 2,
         'pin_memory': True,
         'prefetch_factor': 4,
         'persistent_workers': True
@@ -173,20 +183,12 @@ def train_with_config(args, opts):
     train_loader = DataLoader(ntu60_xsub_train, **trainloader_params)
     test_loader = DataLoader(ntu60_xsub_val, **testloader_params)
 
-    chk_filename = os.path.join(opts.checkpoint, "latest_epoch.bin")
-    if os.path.exists(chk_filename):
-        opts.resume = chk_filename
-    if opts.resume or opts.evaluate:
-        chk_filename = opts.evaluate if opts.evaluate else opts.resume
-        print('Loading checkpoint', chk_filename)
-        checkpoint = torch.load(chk_filename, map_location=lambda storage, loc: storage)
-        model.load_state_dict(checkpoint['model'], strict=True)
 
     if not opts.evaluate:
         optimizer = optim.AdamW(
-            [{"params": filter(lambda p: p.requires_grad, model.module.backbone.parameters()),
+            [{"params": filter(lambda p: p.requires_grad, model._modules["backbone"].parameters()),
               "lr": args.lr_backbone},
-             {"params": filter(lambda p: p.requires_grad, model.module.head.parameters()),
+             {"params": filter(lambda p: p.requires_grad, model._modules["head"].parameters()),
               "lr": args.lr_head},
              ], lr=args.lr_backbone,
             weight_decay=args.weight_decay
@@ -286,7 +288,8 @@ def train_with_config(args, opts):
 
 
 # train arguments:
-# --config configs/action/MB_train_NTU60_xsub.yaml -ms checkpoint/action/MB_train_NTU60_xsub/best_epoch.bin
+# --config configs/action/MB_train_NTU60_xsub.yaml
+# -ms checkpoint/action/MB_train_NTU60_xsub/best_epoch.bin
 # -freq 1
 
 if __name__ == "__main__":

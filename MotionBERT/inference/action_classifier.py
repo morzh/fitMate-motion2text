@@ -1,6 +1,7 @@
 import os
 import sys
 from typing import Tuple
+import pickle5
 import argparse
 from pathlib import Path
 
@@ -66,7 +67,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/action/MB_train_NTU60_xsub.yaml",
                         help="Path to the config file.")
-    parser.add_argument("--skeletons_dir", type=str, default="",
+    parser.add_argument("--skeletons_fpath", type=str, default="",
                         help="Path to data for classification.")
     parser.add_argument("--save_fpath", type=str, default="run/classification_results.txt",
                         help="Path to file for save classification results.")
@@ -81,15 +82,24 @@ def run_example(model):
     print(labels)
 
 
-def run(data_dpath: str, result_fpath: str, model: ActionClassifier) -> None:
+def run(fpath: str, result_fpath: str, model: ActionClassifier) -> None:
+    data = read_pickle(fpath)
+    concat_data = np.concatenate(list(data.values()))[None].swapaxes(0, 1)
+    probs, labels = model.inference(concat_data)
     pass
+
+
+def read_pickle(fpath):
+    with open(str(PROJECT_ROOT / fpath), 'rb') as file:
+        data = pickle5.load(file)
+    return data
 
 
 if __name__ == '__main__':
     opts = parse_args()
     args = get_config(PROJECT_ROOT / opts.config)
     model = ActionClassifier(args)
-    if not opts.skeletons_dir:
+    if not opts.skeletons_fpath:
         run_example(model)
     else:
-        run(opts.skeletons_dir, opts.save_fpath, model)
+        run(opts.skeletons_fpath, opts.save_fpath, model)
