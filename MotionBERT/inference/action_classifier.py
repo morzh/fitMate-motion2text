@@ -9,23 +9,30 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from lib.utils.learning import load_backbone
+from lib.utils.learning import load_backbone, load_pretrained_weights
 from lib.utils.tools import get_config
 from lib.model.model_action import ActionNet
 
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
-RESULT_DIR = PROJECT_ROOT/"run"
+RESULT_DIR = PROJECT_ROOT / "run"
 RESULT_DIR.mkdir(exist_ok=True)
 
 
 class ActionClassifier:
     LABEL_FPATH = str(PROJECT_ROOT / "data" / "action" / "ntu_actions.txt")
 
-    def __init__(self, args):
+    def __init__(self, args, checkpoint_fpath: str = " "):
         self._args = args
         model_backbone = load_backbone(args)
+        if checkpoint_fpath:
+            checkpoint = torch.load(checkpoint_fpath, map_location=lambda storage, loc: storage)
+            if 'model_pos' in checkpoint:
+                checkpoint = checkpoint['model_pos']
+            else:
+                checkpoint = checkpoint['model']
+            model_backbone = load_pretrained_weights(model_backbone, checkpoint)
         self.model = ActionNet(backbone=model_backbone,
                                dim_rep=args.dim_rep,
                                num_classes=args.action_classes,
@@ -33,6 +40,7 @@ class ActionClassifier:
                                version=args.model_version,
                                hidden_dim=args.hidden_dim,
                                num_joints=args.num_joints)
+
         self.model.eval()
         if torch.cuda.is_available():
             self.model = nn.DataParallel(self.model)
@@ -78,9 +86,10 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/action/MB_train_NTU60_xsub.yaml",
                         help="Path to the config file.")
+    parser.add_argument("--checkpoint", type=str, default="", help="Path to a model checkpoint.")
     parser.add_argument("--skeletons_fpath", type=str, default="",
                         help="Path to data for classification.")
-    parser.add_argument("--save_fpath", type=str, default=RESULT_DIR/"classification_results.pkl",
+    parser.add_argument("--save_fpath", type=str, default=RESULT_DIR / "classification_results.pkl",
                         help="Path to file for save classification results.")
     opts = parser.parse_args()
     return opts
@@ -120,7 +129,7 @@ def write_pickle(fpath, data):
 if __name__ == '__main__':
     opts = parse_args()
     args = get_config(PROJECT_ROOT / opts.config)
-    model = ActionClassifier(args)
+    model = ActionClassifier(args, opts.checkpoint)
     if not opts.skeletons_fpath:
         run_example(model)
     else:
