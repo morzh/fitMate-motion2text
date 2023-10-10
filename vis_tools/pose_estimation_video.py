@@ -16,6 +16,7 @@ from mmpose.utils.hooks import OutputHook
 from models import build_posenet
 from colors_styles import *
 from mmdet.apis import inference_detector, init_detector
+from visualization_utilities import *
 
 plt.switch_backend('Agg')
 has_mmdet = True
@@ -47,7 +48,7 @@ class NumpyEncoder(json.JSONEncoder):
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
-
+'''
 def bbox_xyxy2xywh(bbox_xyxy):
     """Transform the bbox format from x1y1x2y2 to xywh.
 
@@ -133,12 +134,14 @@ def vis_pose_result(image_name, pose_results, thickness, out_file):
 
     plt.savefig(out_file, format='png', bbox_inches='tight', dpi=100)
     plt.close()
+'''
 
 
 def init_pose_model(config, checkpoint=None, device='cuda:0'):
     """Initialize a pose model from config file.
 
     Args:
+        device:
         config (str or :obj:`mmcv.Config`): Config file path or the config
             object.
         checkpoint (str, optional): Checkpoint path. If left as None, the model
@@ -163,7 +166,7 @@ def init_pose_model(config, checkpoint=None, device='cuda:0'):
     model.eval()
     return model
 
-
+'''
 def draw_bbox(img, bbox_xywh, color=(255, 90, 90), thickness=2):
     bbox_xywh = bbox_xywh.astype(int)
     img = cv2.line(img, (bbox_xywh[0], bbox_xywh[1]), (bbox_xywh[0] + bbox_xywh[2], bbox_xywh[1]), color=color, thickness=thickness)
@@ -175,8 +178,9 @@ def draw_bbox(img, bbox_xywh, color=(255, 90, 90), thickness=2):
 
 def draw_skeleton(img, pose_results, thickness=2):
     for i, dt in enumerate(pose_results[:]):
-        dt_joints = pose_results[0][:, :2]
-        joints_dict = map_joint_dict(dt_joints)
+        joints = pose_results[0][:, :2]
+        joints_dict = map_joint_dict(joints)
+        joints_scores = pose_results[0][:, 2]
 
         # stick
         for k, link_pair in enumerate(chunhua_style.link_pairs):
@@ -190,21 +194,21 @@ def draw_skeleton(img, pose_results, thickness=2):
             # img = cv2.line(img, (joints_dict[link_pair[0]][0], joints_dict[link_pair[1]][0]), (joints_dict[link_pair[0]][1], joints_dict[link_pair[1]][1]), color=link_pair[2], thickness=lw)
 
         # dark ring
-        for k in range(dt_joints.shape[0]):
+        for k in range(joints.shape[0]):
             if k in range(5):
                 radius = thickness
             else:
                 radius = thickness * 2
 
-            img = cv2.circle(img, tuple(dt_joints[k].astype(int)), radius, (30, 30, 30), thickness)
+            img = cv2.circle(img, tuple(joints[k].astype(int)), radius, (30, 30, 30), thickness)
 
         return img
-
+'''
 
 chunhua_style = ColorStyle(color2, link_pairs2, point_color2)
 show_frame_results = False
 
-
+'''
 def bboxes_dict2ndarray(persons_bboxes):
     bboxes = np.empty((0, 5))
     for index in range(len(persons_bboxes)):
@@ -237,6 +241,7 @@ def largest_bbox_threshold(bboxes_xywh, threshold):
             largest_bbox_area = current_bbox_area
 
     return largest_bbox
+'''
 
 
 def main():
@@ -291,7 +296,7 @@ def main():
         persons_bboxes = process_mmdet_results(mmdet_results, cfg['det_cat_id'])
         persons_bboxes = bboxes_dict2ndarray(persons_bboxes)
         persons_bboxes = bbox_xyxy2xywh(persons_bboxes)
-        bounding_box = largest_bbox_threshold(persons_bboxes, cfg['bbox_threshold'])
+        bounding_box = get_largest_bbox(persons_bboxes, cfg['bbox_threshold'])
 
         if bounding_box is None:
             capture_target.write(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))

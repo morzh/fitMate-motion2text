@@ -6,8 +6,9 @@ from dataset_from_video_annotations import DatasetFromVideoAnnotations
 
 
 def main():
-    folder_annotations = '/home/anton/work/fitMate/datasets/ActionDatasets/TestActions/annotations'
     folder_dataset = '/home/anton/work/fitMate/datasets/ActionDatasets/TestActions'
+    folder_source_videos = 'source'
+    folder_annotations = '/home/anton/work/fitMate/datasets/ActionDatasets/TestActions/annotations'
     claps_dataset_filename = 'claps_youtube.pkl'
     filenames = [f for f in os.listdir(folder_annotations) if os.path.isfile(os.path.join(folder_annotations, f)) and f.endswith('json')]
 
@@ -15,21 +16,27 @@ def main():
 
     dataset = {}
     for filename in filenames:
-        # if filename != 'Happy beautiful businesswoman clapping hands Alpha Channel  Stock Footage - Videohive.mp4.json':
-        #     continue
         print(filename)
         json_filepath = os.path.join(folder_annotations, filename)
         with open(json_filepath, 'r') as f:
             annotation = json.load(f)
 
+        video_source_filename = annotation['filename']
         video_shape = (annotation['width'], annotation['height'])
+
         poses = [p['pose'] for p in annotation['annotations_PCT']]
         poses = np.array(poses)
-        poses = dataset_generator.get_samples(poses)
+
+        poses_frames = [p['frame'] for p in annotation['annotations_PCT']]
+        poses_frames = np.array(poses_frames)
+
         poses = dataset_generator.reassign_pct_joints_scores(poses, video_shape)
+        video_file_pathname = os.path.join(folder_dataset, folder_source_videos, video_source_filename)
+        # dataset_generator.visualize_joints(poses, poses_frames, video_file_pathname, vis_joints_scores=True)
+        poses = dataset_generator.get_samples(poses)
         poses = dataset_generator.normalize(poses, video_shape)
 
-        dataset[filename] = poses
+        dataset[os.path.splitext(filename)[0]] = poses.astype(np.float32)
 
     with open(os.path.join(folder_dataset, claps_dataset_filename), 'wb') as f:
         pickle.dump(dataset, f, protocol=pickle.HIGHEST_PROTOCOL)

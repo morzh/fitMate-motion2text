@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+
+
 def bbox_xyxy2xywh(bbox_xyxy):
     """Transform the bbox format from x1y1x2y2 to xywh.
 
@@ -88,10 +90,16 @@ def vis_pose_result(image_name, pose_results, thickness, out_file):
     plt.close()
 
 
-def draw_skeleton(img, pose_results, style, thickness=2):
+def draw_skeleton(img, pose_results, style, thickness=2, vis_scores=False):
     for i, dt in enumerate(pose_results[:]):
-        dt_joints = pose_results[0][:, :2]
-        joints_dict = map_joint_dict(dt_joints)
+        if len(pose_results.shape) == 3:
+            joints_coordinates = pose_results[0][:, :2]
+            joints_scores = pose_results[0][:, 2]
+        elif len(pose_results.shape) == 2:
+            joints_coordinates = pose_results[:, :2]
+            joints_scores = pose_results[:, 2]
+
+        joints_dict = map_joint_dict(joints_coordinates)
 
         # stick
         for k, link_pair in enumerate(style.link_pairs):
@@ -102,16 +110,20 @@ def draw_skeleton(img, pose_results, style, thickness=2):
 
             color_current = (255 * link_pair[2][2], 255 * link_pair[2][1], 255 * link_pair[2][0])
             img = cv2.line(img, joints_dict[link_pair[0]], joints_dict[link_pair[1]], color=color_current, thickness=lw)
-            # img = cv2.line(img, (joints_dict[link_pair[0]][0], joints_dict[link_pair[1]][0]), (joints_dict[link_pair[0]][1], joints_dict[link_pair[1]][1]), color=link_pair[2], thickness=lw)
 
         # dark ring
-        for k in range(dt_joints.shape[0]):
+        for k in range(joints_coordinates.shape[0]):
             if k in range(5):
                 radius = thickness
             else:
                 radius = thickness * 2
 
-            img = cv2.circle(img, tuple(dt_joints[k].astype(int)), radius, (30, 30, 30), thickness)
+            if vis_scores:
+                joint_color = (joints_scores[k] * 255,) * 3
+                img = cv2.circle(img, tuple(joints_coordinates[k].astype(int)), radius, joint_color, thickness)
+            else:
+                joint_color = (30,) * 3
+                img = cv2.circle(img, tuple(joints_coordinates[k].astype(int)), radius, joint_color, thickness)
 
         return img
 
